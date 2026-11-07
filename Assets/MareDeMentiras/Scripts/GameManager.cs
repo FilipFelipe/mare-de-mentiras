@@ -18,6 +18,9 @@ namespace MareDeMentiras
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
         {
+            // Nos testes automáticos (PlayMode) o Unity usa uma cena própria: lá só o motor é testado,
+            // sem abrir menu nem acessar a Unity Cloud.
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name.StartsWith("InitTestScene")) return;
             if (FindAnyObjectByType<GameManager>() == null)
                 new GameObject("Maré de Mentiras").AddComponent<GameManager>();
         }
