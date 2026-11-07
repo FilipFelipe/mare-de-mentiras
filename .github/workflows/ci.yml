@@ -1,7 +1,7 @@
 # CI do Maré de Mentiras
 #
 # - Todo push e pull request: roda os testes (EditMode + PlayMode).
-# - Push na main, tag v* ou disparo manual: gera builds de Mac, Windows e Android.
+# - Push na main, tag v* ou disparo manual: gera a build de Windows.
 # - Push na main ou tag v*: publica a versão de navegador (WebGL) no GitHub Pages.
 # - Tag v* (ex.: v1.0.0): publica as builds numa Release do GitHub.
 #
@@ -82,12 +82,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - plataforma: StandaloneOSX
-            nome: Mac
           - plataforma: StandaloneWindows64
             nome: Windows
-          - plataforma: Android
-            nome: Android
     steps:
       # As imagens Docker do Unity ocupam 5–10 GB: libera espaço no runner antes de tudo.
       - name: Liberar espaço em disco
@@ -101,7 +97,7 @@ jobs:
           swap-storage: false
           tool-cache: false
 
-      # Builds IL2CPP (WebGL/Android) usam muita memória: 12 GB de swap evitam o "exit code 137".
+      # Builds IL2CPP (WebGL) usam muita memória: 12 GB de swap evitam o "exit code 137".
       - name: Aumentar memória virtual (swap)
         run: |
           sudo fallocate -l 12G /mnt/swapfile-extra
@@ -129,12 +125,8 @@ jobs:
       - name: Empacotar
         run: |
           mkdir -p dist
-          if [ "${{ matrix.plataforma }}" = "Android" ]; then
-            cp build/Android/*.apk "dist/MareDeMentiras-Android.apk"
-          else
-            (cd "build/${{ matrix.plataforma }}" && zip -qry "$GITHUB_WORKSPACE/dist/MareDeMentiras-${{ matrix.nome }}.zip" . \
-              -x '*_BackUpThisFolder_ButDontShipItWithYourGame*' '*_BurstDebugInformation_DoNotShip*')
-          fi
+          (cd "build/${{ matrix.plataforma }}" && zip -qry "$GITHUB_WORKSPACE/dist/MareDeMentiras-${{ matrix.nome }}.zip" . \
+            -x '*_BackUpThisFolder_ButDontShipItWithYourGame*' '*_BurstDebugInformation_DoNotShip*')
           ls -lh dist
 
       - uses: actions/upload-artifact@v4
@@ -168,7 +160,7 @@ jobs:
           swap-storage: false
           tool-cache: false
 
-      # Builds IL2CPP (WebGL/Android) usam muita memória: 12 GB de swap evitam o "exit code 137".
+      # Builds IL2CPP (WebGL) usam muita memória: 12 GB de swap evitam o "exit code 137".
       - name: Aumentar memória virtual (swap)
         run: |
           sudo fallocate -l 12G /mnt/swapfile-extra

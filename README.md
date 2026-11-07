@@ -7,7 +7,7 @@
 [![CI](https://github.com/FilipFelipe/mare-de-mentiras/actions/workflows/ci.yml/badge.svg)](https://github.com/FilipFelipe/mare-de-mentiras/actions/workflows/ci.yml)
 ![Unity](https://img.shields.io/badge/Unity-6000.6-black?logo=unity)
 ![Players](https://img.shields.io/badge/players-2%E2%80%936-e2b858)
-![Platforms](https://img.shields.io/badge/platforms-Web%20%7C%20Windows%20%7C%20macOS%20%7C%20Android-2d4a46)
+![Platforms](https://img.shields.io/badge/platforms-Web%20%7C%20Windows-2d4a46)
 
 ### [▶ Play in your browser](https://filipfelipe.github.io/mare-de-mentiras/) · [⬇ Download](https://github.com/FilipFelipe/mare-de-mentiras/releases/latest)
 
@@ -52,7 +52,7 @@ Tables with 5 or 6 pirates use a bigger deck (4 copies of each character instead
 - 🔐 **Public, private or password rooms**: private rooms stay out of the list (code only); password rooms show a 🔒 and ask for the password.
 - 🔒 **No peeking**: the host runs the match and each player only ever receives their own cards.
 - 🔌 **Drop-in safe**: if someone disconnects, an AI pirate takes over their seat.
-- 🖥️ **Cross-platform**: web, Windows, macOS and Android can all play in the same room.
+- 🖥️ **Cross-platform**: browser and Windows players can share the same room.
 - ✨ Animated table: speech bubbles, flying coins, card flips and a ship's log of every move.
 
 <table>
@@ -86,12 +86,11 @@ Tables with 5 or 6 pirates use a bigger deck (4 copies of each character instead
 |---|---|
 | 🌐 **Browser** | [filipfelipe.github.io/mare-de-mentiras](https://filipfelipe.github.io/mare-de-mentiras/) |
 | 🪟 **Windows** | Download `MareDeMentiras-Windows.zip` from [Releases](https://github.com/FilipFelipe/mare-de-mentiras/releases/latest), unzip, run `MareDeMentiras.exe` |
-| 🍎 **macOS** | Download `MareDeMentiras-Mac.zip`, unzip, then **right-click → Open** the first time (the app isn't signed) |
-| 🤖 **Android** | Download `MareDeMentiras-Android.apk` and install it (allow installs from unknown sources) |
+| 🍎📱 **macOS / mobile** | Use the browser version |
 
 ## Building from source
 
-**Requirements:** [Unity 6000.6.8f1](https://unity.com/releases/editor/archive) with the modules for the platforms you want (WebGL, Windows, Android…).
+**Requirements:** [Unity 6000.6.8f1](https://unity.com/releases/editor/archive) with the modules for the platforms you want (WebGL, Windows…).
 
 1. Clone the repo and open the folder in **Unity Hub → Add → Add project from disk**.
 2. Open `Assets/Scenes/Jogo.unity` and press **Play**. The game builds its whole UI from code, so there's nothing to set up in the scene.
@@ -133,7 +132,7 @@ Window → General → Test Runner → Run All
 - **EditMode:** rules consistency, deck size for every table size, network message round-trips, nickname sanitizing.
 - **PlayMode:** whole simulated matches with 2 to 6 players, with humans answering at random, invalid answers, and players leaving mid-game. After **every move** they check that no player ever receives another player's hidden cards.
 
-[GitHub Actions](.github/workflows/ci.yml) (via [GameCI](https://game.ci)) runs the tests on every push and pull request. On `main` it also builds **Windows, macOS and Android**, and deploys the **web version to GitHub Pages**. Pushing a tag like `v1.0.0` publishes a **Release** with all builds.
+[GitHub Actions](.github/workflows/ci.yml) (via [GameCI](https://game.ci)) runs the tests on every push and pull request. On `main` it also builds **Windows** and deploys the **web version to GitHub Pages**. Pushing a tag like `v1.0.0` publishes a **Release** with the Windows build.
 
 The workflow needs these repository secrets: `UNITY_LICENSE`, `UNITY_EMAIL` and `UNITY_PASSWORD` ([how to get them](https://game.ci/docs/github/activation)). GitHub Pages must be set to **Source: GitHub Actions**.
 
