@@ -1,0 +1,6 @@
+# O Unity grava o identificador da organização no ProjectSettings. Ele não é necessário
+# para o jogo rodar (o online usa só o cloudProjectId), então é removido em cada commit.
+# Configure uma vez por clone:
+#   git config filter.strip-unity-org.clean "sed -E 's/^(  organizationId:).*/\1 /'"
+#   git config filter.strip-unity-org.smudge cat
+ProjectSettings/ProjectSettings.asset filter=strip-unity-org

@@ -78,6 +78,7 @@ namespace MareDeMentiras
         {
             await InitServicesAsync();
             EnsureNetworkManager();
+            UseWebSocketTransport(true);
             leaving = false;
             var options = new SessionOptions
             {
@@ -96,6 +97,7 @@ namespace MareDeMentiras
         {
             await InitServicesAsync();
             EnsureNetworkManager();
+            UseWebSocketTransport(true);
             leaving = false;
             pendingHelloName = nickname;
             session = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, JoinOptions(password));
@@ -143,6 +145,7 @@ namespace MareDeMentiras
         {
             await InitServicesAsync();
             EnsureNetworkManager();
+            UseWebSocketTransport(true);
             leaving = false;
             pendingHelloName = nickname;
             session = await MultiplayerService.Instance.JoinSessionByCodeAsync(code.Trim().ToUpperInvariant(), JoinOptions(password));
@@ -153,6 +156,7 @@ namespace MareDeMentiras
         public void HostDirect(ushort port = 7777)
         {
             EnsureNetworkManager();
+            UseWebSocketTransport(false);
             leaving = false;
             nm.GetComponent<UnityTransport>().SetConnectionData("127.0.0.1", port, "0.0.0.0");
             nm.StartHost();
@@ -162,6 +166,7 @@ namespace MareDeMentiras
         public void JoinDirect(string ip, string nickname, ushort port = 7777)
         {
             EnsureNetworkManager();
+            UseWebSocketTransport(false);
             leaving = false;
             pendingHelloName = nickname;
             nm.GetComponent<UnityTransport>().SetConnectionData(ip, port);
@@ -178,6 +183,13 @@ namespace MareDeMentiras
             try { if (s != null) await s.LeaveAsync(); }
             catch (Exception e) { Debug.LogWarning("Erro ao sair da sessão: " + e.Message); }
             if (nm != null && nm.IsListening) nm.Shutdown();
+        }
+
+        /// <summary>O transporte precisa usar o mesmo protocolo do Relay (WebSockets), senão a conexão é recusada.</summary>
+        void UseWebSocketTransport(bool on)
+        {
+            var transport = nm.GetComponent<UnityTransport>();
+            if (transport != null) transport.UseWebSockets = on;
         }
 
         static async Task InitServicesAsync()
