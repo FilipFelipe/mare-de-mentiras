@@ -173,12 +173,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/cache@v4
-        with:
-          path: Library
-          key: Library-WebGL-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: Library-WebGL-
-
+      # Sem cache da pasta Library aqui: restaurar o cache de uma build WebGL anterior
+      # fazia o Unity ser encerrado ao abrir (exit code 137). Importar do zero é mais lento, mas confiável.
       - uses: game-ci/unity-builder@v4
         with:
           targetPlatform: WebGL
