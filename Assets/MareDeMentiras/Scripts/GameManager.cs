@@ -70,9 +70,13 @@ namespace MareDeMentiras
             menu = gameObject.AddComponent<MenuUI>();
             menu.Init(transform);
             menu.OnSolo = PlaySolo;
-            menu.OnCreate = CreateRoom;
-            menu.OnJoin = JoinRoom;
-            menu.OnJoinRoom = JoinRoomById;
+            menu.OnCreateRoom = CreateRoom;
+            menu.OnJoin = code => JoinRoom(code);
+            menu.OnJoinRoom = room =>
+            {
+                if (room.hasPassword) menu.AskPassword(room.name, null, pwd => JoinRoomById(room, pwd));
+                else JoinRoomById(room, null);
+            };
             menu.OnRefreshRooms = RefreshRooms;
             menu.OnLobbyAiChanged = RefreshLobby;
             menu.OnStartGame = StartOnlineGame;
@@ -101,11 +105,11 @@ namespace MareDeMentiras
         static bool OnlineConfigured => !string.IsNullOrEmpty(Application.cloudProjectId);
         const string OnlineOff = "O online está desativado neste projeto.\nNo Unity: Edit > Project Settings > Services e vincule o projeto.";
 
-        public async void CreateRoom()
+        public async void CreateRoom(RoomVisibility visibility, string password)
         {
             if (!OnlineConfigured) { menu.ShowMenu(OnlineOff); return; }
             menu.ShowBusy("Criando sala…");
-            try { await net.HostAsync($"Sala de {menu.Nickname}"); }
+            try { await net.HostAsync($"Sala de {menu.Nickname}", visibility, password); }
             catch (Exception e)
             {
                 Debug.LogException(e);
@@ -116,31 +120,43 @@ namespace MareDeMentiras
             AfterHosted();
         }
 
-        public async void JoinRoom(string code)
+        public async void JoinRoom(string code, string password = null)
         {
             if (string.IsNullOrWhiteSpace(code)) { menu.ShowMenu("Digite o código da sala."); return; }
             if (!OnlineConfigured) { menu.ShowMenu(OnlineOff); return; }
             menu.ShowBusy("Entrando na sala…");
-            try { await net.JoinAsync(code, menu.Nickname); }
+            try { await net.JoinAsync(code, menu.Nickname, password); }
             catch (Exception e)
             {
-                Debug.LogException(e);
                 net.Leave();
+                // Sala com senha (entrando pelo código): pede a senha e tenta de novo.
+                if (NetSession.IsWrongPassword(e))
+                {
+                    menu.AskPassword("Sala " + code.ToUpperInvariant(), password == null ? null : "Senha incorreta. Tente de novo.",
+                                     pwd => JoinRoom(code, pwd));
+                    return;
+                }
+                Debug.LogException(e);
                 menu.ShowMenu(FriendlyError(e));
                 return;
             }
             AfterJoined(code);
         }
 
-        public async void JoinRoomById(string sessionId)
+        public async void JoinRoomById(RoomInfo room, string password)
         {
             if (!OnlineConfigured) { menu.ShowMenu(OnlineOff); return; }
             menu.ShowBusy("Entrando na sala…");
-            try { await net.JoinByIdAsync(sessionId, menu.Nickname); }
+            try { await net.JoinByIdAsync(room.id, menu.Nickname, password); }
             catch (Exception e)
             {
-                Debug.LogException(e);
                 net.Leave();
+                if (NetSession.IsWrongPassword(e))
+                {
+                    menu.AskPassword(room.name, "Senha incorreta. Tente de novo.", pwd => JoinRoomById(room, pwd));
+                    return;
+                }
+                Debug.LogException(e);
                 menu.ShowMenu(FriendlyError(e));
                 return;
             }

@@ -22,6 +22,15 @@ namespace MareDeMentiras
     {
         public string id, name;
         public int players, max;
+        public bool hasPassword;
+    }
+
+    /// <summary>Quem pode entrar na sala.</summary>
+    public enum RoomVisibility
+    {
+        Publica,   // aparece na lista
+        Privada,   // não aparece na lista; só com o código
+        Senha,     // aparece na lista com cadeado; pede senha
     }
 
     public class NetSession : MonoBehaviour
@@ -49,26 +58,58 @@ namespace MareDeMentiras
 
         // ================================================================== conexão
 
-        /// <summary>Cria uma sala pública (aparece na lista) que também pode ser acessada pelo código.</summary>
-        public async Task HostAsync(string roomName)
+        /// <summary>A sala pediu senha e ela estava errada (ou faltou).</summary>
+        public static bool IsWrongPassword(Exception e)
+        {
+            for (var x = e; x != null; x = x.InnerException)
+            {
+                if (x is RequestFailedException rfe && rfe.ErrorCode == 16009) return true;   // LobbyExceptionReason.IncorrectPassword
+                if (x is AggregateException ag && ag.InnerExceptions.Any(IsWrongPassword)) return true;
+                if ((x.Message ?? "").IndexOf("password", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            }
+            return false;
+        }
+
+        /// <summary>A Unity exige senhas de 8 a 64 caracteres.</summary>
+        public const int MinPassword = 8, MaxPassword = 64;
+
+        /// <summary>Cria uma sala. O código sempre funciona; a lista mostra só as públicas e as com senha.</summary>
+        public async Task HostAsync(string roomName, RoomVisibility visibility, string password)
         {
             await InitServicesAsync();
             EnsureNetworkManager();
             leaving = false;
-            var options = new SessionOptions { Name = roomName, MaxPlayers = Rules.MaxPlayers, IsPrivate = false }.WithRelayNetwork();
+            var options = new SessionOptions
+            {
+                Name = roomName,
+                MaxPlayers = Rules.MaxPlayers,
+                IsPrivate = visibility == RoomVisibility.Privada,
+                Password = visibility == RoomVisibility.Senha ? password : null,
+            }
+                .WithRelayNetwork()
+                .WithNetworkOptions(WebSockets());
             session = await MultiplayerService.Instance.CreateSessionAsync(options);
             Code = session.Code;
         }
 
-        public async Task JoinByIdAsync(string sessionId, string nickname)
+        public async Task JoinByIdAsync(string sessionId, string nickname, string password = null)
         {
             await InitServicesAsync();
             EnsureNetworkManager();
             leaving = false;
             pendingHelloName = nickname;
-            session = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId);
+            session = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, JoinOptions(password));
             Code = session.Code;
         }
+
+        /// <summary>
+        /// Todo mundo conecta ao Relay por WebSockets: é o único protocolo do navegador (WebGL),
+        /// e usando o mesmo em Mac/Windows/Android todos podem jogar juntos na mesma sala.
+        /// </summary>
+        static NetworkOptions WebSockets() => new NetworkOptions { RelayProtocol = RelayProtocol.WSS };
+
+        static JoinSessionOptions JoinOptions(string password) =>
+            new JoinSessionOptions { Password = string.IsNullOrEmpty(password) ? null : password }.WithNetworkOptions(WebSockets());
 
         /// <summary>Salas públicas com vaga e que ainda não começaram.</summary>
         public async Task<List<RoomInfo>> ListRoomsAsync()
@@ -80,9 +121,9 @@ namespace MareDeMentiras
                 FilterOptions = new List<FilterOption> { new FilterOption(FilterField.AvailableSlots, "0", FilterOperation.Greater) },
             });
             return res.Sessions
-                .Where(s => !s.IsLocked && !s.HasPassword)
+                .Where(s => !s.IsLocked)
                 .OrderByDescending(s => s.Created)
-                .Select(s => new RoomInfo { id = s.Id, name = s.Name, max = s.MaxPlayers, players = s.MaxPlayers - s.AvailableSlots })
+                .Select(s => new RoomInfo { id = s.Id, name = s.Name, max = s.MaxPlayers, players = s.MaxPlayers - s.AvailableSlots, hasPassword = s.HasPassword })
                 .ToList();
         }
 
@@ -98,13 +139,13 @@ namespace MareDeMentiras
             catch (Exception e) { Debug.LogWarning("Não foi possível atualizar a sala: " + e.Message); }
         }
 
-        public async Task JoinAsync(string code, string nickname)
+        public async Task JoinAsync(string code, string nickname, string password = null)
         {
             await InitServicesAsync();
             EnsureNetworkManager();
             leaving = false;
             pendingHelloName = nickname;
-            session = await MultiplayerService.Instance.JoinSessionByCodeAsync(code.Trim().ToUpperInvariant());
+            session = await MultiplayerService.Instance.JoinSessionByCodeAsync(code.Trim().ToUpperInvariant(), JoinOptions(password));
             Code = session.Code;
         }
 

@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
 
 namespace MareDeMentiras.EditorTools
@@ -11,13 +12,23 @@ namespace MareDeMentiras.EditorTools
     /// Só altera o que estiver diferente.
     /// </summary>
     [InitializeOnLoad]
-    static class ProjectSettingsGuard
+    class ProjectSettingsGuard : IPreprocessBuildWithReport
     {
         const string Product = "Maré de Mentiras";
         const string Company = "play-online-ff";
         const string AppId = "com.playonlineff.maredementiras";
+        const string WebGLTemplate = "PROJECT:MareDeMentiras";
 
-        static ProjectSettingsGuard() => EditorApplication.delayCall += Apply;
+        static ProjectSettingsGuard()
+        {
+            // No CI (modo batch) a build pode começar antes do próximo frame: aplica na hora.
+            if (Application.isBatchMode) Apply();
+            else EditorApplication.delayCall += Apply;
+        }
+
+        // Garantia extra: reaplica logo antes de qualquer build.
+        public int callbackOrder => -1000;
+        public void OnPreprocessBuild(BuildReport report) => Apply();
 
         [MenuItem("Maré de Mentiras/Reaplicar configurações do projeto")]
         static void Apply()
@@ -38,6 +49,15 @@ namespace MareDeMentiras.EditorTools
                 PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
                 PlayerSettings.allowedAutorotateToLandscapeLeft = true;
                 PlayerSettings.allowedAutorotateToLandscapeRight = true;
+                changed = true;
+            }
+
+            // Navegador (GitHub Pages): página própria e compressão que funciona sem configurar o servidor.
+            changed |= Set(PlayerSettings.WebGL.template, WebGLTemplate, v => PlayerSettings.WebGL.template = v);
+            if (PlayerSettings.WebGL.compressionFormat != WebGLCompressionFormat.Gzip || !PlayerSettings.WebGL.decompressionFallback)
+            {
+                PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
+                PlayerSettings.WebGL.decompressionFallback = true;
                 changed = true;
             }
 

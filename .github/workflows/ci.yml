@@ -2,7 +2,10 @@
 #
 # - Todo push e pull request: roda os testes (EditMode + PlayMode).
 # - Push na main, tag v* ou disparo manual: gera builds de Mac, Windows e Android.
+# - Push na main ou tag v*: publica a versão de navegador (WebGL) no GitHub Pages.
 # - Tag v* (ex.: v1.0.0): publica as builds numa Release do GitHub.
+#
+# GitHub Pages: em Settings > Pages, escolha "Source: GitHub Actions".
 #
 # Segredos necessários (Settings > Secrets and variables > Actions):
 #   UNITY_LICENSE   conteúdo do arquivo de licença .ulf
@@ -116,6 +119,42 @@ jobs:
           name: MareDeMentiras-${{ matrix.nome }}
           path: dist/*
           retention-days: 14
+
+  pages:
+    name: Publicar no GitHub Pages (navegador)
+    needs: testes
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-WebGL-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-WebGL-
+
+      - uses: game-ci/unity-builder@v4
+        with:
+          targetPlatform: WebGL
+          buildName: web
+          versioning: Semantic
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/WebGL/web
+
+      - uses: actions/deploy-pages@v4
+        id: deploy
 
   release:
     name: Publicar Release

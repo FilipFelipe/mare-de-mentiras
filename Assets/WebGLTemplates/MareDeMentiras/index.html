@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes">
+    <meta name="description" content="Maré de Mentiras: um jogo de blefe entre piratas, de 2 a 6 jogadores.">
+    <meta name="theme-color" content="#1a120c">
+    <title>{{{ PRODUCT_NAME }}}</title>
+    <link rel="icon" type="image/png" href="TemplateData/favicon.png">
+    <style>
+      @font-face { font-family: "Pirata One"; src: url("TemplateData/PirataOne-Regular.ttf"); }
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #1a120c; }
+      #unity-canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; background: #1a120c; outline: none; }
+      #loading {
+        position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+        background: radial-gradient(ellipse at center, #2d4a46 0%, #1a120c 70%);
+        font-family: "Pirata One", Georgia, serif; color: #ffd466; text-align: center;
+        transition: opacity .5s ease;
+      }
+      #loading img { width: 150px; filter: drop-shadow(0 10px 18px rgba(0,0,0,.6)); animation: bob 2.4s ease-in-out infinite; }
+      #loading h1 { margin: 0; font-size: clamp(40px, 8vw, 84px); font-weight: normal; text-shadow: 3px 3px 0 #2a1408; }
+      #loading p { margin: 0; color: #f6eedb; font-family: Georgia, serif; font-size: 18px; opacity: .8; }
+      #bar { width: min(420px, 70vw); height: 18px; border: 3px solid #e2b858; border-radius: 12px; background: #20140c; overflow: hidden; }
+      #fill { width: 0%; height: 100%; background: linear-gradient(#ffe39a, #c8902e); transition: width .2s ease; }
+      #error { display: none; max-width: 640px; padding: 14px 20px; border-radius: 10px; background: #5b1a14; color: #ffe6e0; font-family: Georgia, serif; }
+      @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-10px) rotate(3deg); } }
+    </style>
+  </head>
+  <body>
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="loading">
+      <img src="TemplateData/verso.png" alt="">
+      <h1>{{{ PRODUCT_NAME }}}</h1>
+      <div id="bar"><div id="fill"></div></div>
+      <p id="status">Içando as velas…</p>
+      <div id="error"></div>
+    </div>
+    <script>
+      const canvas = document.querySelector("#unity-canvas");
+      const loading = document.querySelector("#loading");
+      const fill = document.querySelector("#fill");
+      const status = document.querySelector("#status");
+      const errorBox = document.querySelector("#error");
+
+      function showError(msg) {
+        errorBox.style.display = "block";
+        errorBox.textContent = "Não foi possível carregar o jogo: " + msg;
+        status.textContent = "Tente recarregar a página. Navegadores recomendados: Chrome, Edge, Firefox ou Safari atualizados.";
+      }
+
+      const buildUrl = "Build";
+      const config = {
+        arguments: [],
+#if PROGRESSIVE_ASSET_LOADING
+        primaryDataUrls: {{{ JSON.stringify(PRIMARY_DATA_FILES) }}},
+        secondaryDataUrls: {{{ JSON.stringify(SECONDARY_DATA_FILES) }}},
+#else
+        dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+#endif
+        frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+#if USE_WASM
+        codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+        symbolsUrl: buildUrl + "/{{{ SYMBOLS_FILENAME }}}",
+#endif
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+        productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+        productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+        showBanner: (msg, type) => { if (type === "error") showError(msg); else console.warn(msg); },
+      };
+
+      // Celulares: resolução um pouco menor para rodar liso.
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        config.devicePixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      }
+
+      const script = document.createElement("script");
+      script.src = buildUrl + "/{{{ LOADER_FILENAME }}}";
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          fill.style.width = Math.round(100 * progress) + "%";
+          if (progress >= 0.9) status.textContent = "Embaralhando as cartas…";
+        }).then(() => {
+          loading.style.opacity = "0";
+          setTimeout(() => loading.remove(), 500);
+          canvas.focus();
+        }).catch((message) => showError(message));
+      };
+      script.onerror = () => showError("arquivos do jogo não encontrados.");
+      document.body.appendChild(script);
+    </script>
+  </body>
+</html>
