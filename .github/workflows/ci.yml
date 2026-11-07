@@ -33,11 +33,23 @@ env:
 jobs:
   testes:
     name: Testes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       checks: write
     steps:
+      # As imagens Docker do Unity ocupam 5–10 GB: libera espaço no runner antes de tudo.
+      - name: Liberar espaço em disco
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+          tool-cache: false
+
       - uses: actions/checkout@v4
 
       - uses: actions/cache@v4
@@ -63,7 +75,7 @@ jobs:
     name: Build ${{ matrix.nome }}
     needs: testes
     if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     strategy:
@@ -77,15 +89,17 @@ jobs:
           - plataforma: Android
             nome: Android
     steps:
-      # A imagem do Android é grande: libera espaço no runner antes.
-      - if: matrix.plataforma == 'Android'
+      # As imagens Docker do Unity ocupam 5–10 GB: libera espaço no runner antes de tudo.
+      - name: Liberar espaço em disco
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
           android: true
           dotnet: true
           haskell: true
-          large-packages: false
-          docker-images: false
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+          tool-cache: false
 
       - uses: actions/checkout@v4
         with:
@@ -124,7 +138,7 @@ jobs:
     name: Publicar no GitHub Pages (navegador)
     needs: testes
     if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pages: write
@@ -133,6 +147,18 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
+      # As imagens Docker do Unity ocupam 5–10 GB: libera espaço no runner antes de tudo.
+      - name: Liberar espaço em disco
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+          tool-cache: false
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -160,7 +186,7 @@ jobs:
     name: Publicar Release
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
