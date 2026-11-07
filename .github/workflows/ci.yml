@@ -1,0 +1,137 @@
+# CI do Maré de Mentiras
+#
+# - Todo push e pull request: roda os testes (EditMode + PlayMode).
+# - Push na main, tag v* ou disparo manual: gera builds de Mac, Windows e Android.
+# - Tag v* (ex.: v1.0.0): publica as builds numa Release do GitHub.
+#
+# Segredos necessários (Settings > Secrets and variables > Actions):
+#   UNITY_LICENSE   conteúdo do arquivo de licença .ulf
+#   UNITY_EMAIL     e-mail da conta Unity
+#   UNITY_PASSWORD  senha da conta Unity
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+  UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+  UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+
+jobs:
+  testes:
+    name: Testes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-testes-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-testes-
+
+      - uses: game-ci/unity-test-runner@v4
+        id: testes
+        with:
+          testMode: all
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Resultado dos testes
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resultados-dos-testes
+          path: ${{ steps.testes.outputs.artifactsPath }}
+
+  build:
+    name: Build ${{ matrix.nome }}
+    needs: testes
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - plataforma: StandaloneOSX
+            nome: Mac
+          - plataforma: StandaloneWindows64
+            nome: Windows
+          - plataforma: Android
+            nome: Android
+    steps:
+      # A imagem do Android é grande: libera espaço no runner antes.
+      - if: matrix.plataforma == 'Android'
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: false
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # versão semântica é calculada a partir das tags
+
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ matrix.plataforma }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-${{ matrix.plataforma }}-
+
+      - uses: game-ci/unity-builder@v4
+        with:
+          targetPlatform: ${{ matrix.plataforma }}
+          buildName: MareDeMentiras
+          versioning: Semantic
+
+      - name: Empacotar
+        run: |
+          mkdir -p dist
+          if [ "${{ matrix.plataforma }}" = "Android" ]; then
+            cp build/Android/*.apk "dist/MareDeMentiras-Android.apk"
+          else
+            (cd "build/${{ matrix.plataforma }}" && zip -qry "$GITHUB_WORKSPACE/dist/MareDeMentiras-${{ matrix.nome }}.zip" . \
+              -x '*_BackUpThisFolder_ButDontShipItWithYourGame*' '*_BurstDebugInformation_DoNotShip*')
+          fi
+          ls -lh dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MareDeMentiras-${{ matrix.nome }}
+          path: dist/*
+          retention-days: 14
+
+  release:
+    name: Publicar Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: MareDeMentiras-*
+          path: dist
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

@@ -1,0 +1,23 @@
+{
+    "name": "MareDeMentiras",
+    "rootNamespace": "MareDeMentiras",
+    "references": [
+        "Unity.InputSystem",
+        "UnityEngine.UI",
+        "Unity.Collections",
+        "Unity.Netcode.Runtime",
+        "Unity.Networking.Transport",
+        "Unity.Services.Core",
+        "Unity.Services.Authentication",
+        "Unity.Services.Multiplayer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

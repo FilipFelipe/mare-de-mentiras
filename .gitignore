@@ -1,0 +1,34 @@
+# Gerados pelo Unity (recriados ao abrir o projeto)
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Builds do jogo (publique pelo GitHub Releases, não no repositório)
+/[Bb]uild/
+/[Bb]uilds/
+*.app
+*_BackUpThisFolder_ButDontShipItWithYourGame/
+*_BurstDebugInformation_DoNotShip/
+*.apk
+*.aab
+
+# Arquivos de IDE gerados
+*.csproj
+*.sln
+*.slnx
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+.vs/
+.idea/
+.vscode/
+
+# Sistema
+.DS_Store
+sysinfo.txt
+crashlytics-build.properties
