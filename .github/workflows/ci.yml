@@ -47,7 +47,7 @@ jobs:
           haskell: true
           large-packages: true
           docker-images: true
-          swap-storage: true
+          swap-storage: false
           tool-cache: false
 
       - uses: actions/checkout@v4
@@ -98,8 +98,17 @@ jobs:
           haskell: true
           large-packages: true
           docker-images: true
-          swap-storage: true
+          swap-storage: false
           tool-cache: false
+
+      # Builds IL2CPP (WebGL/Android) usam muita memória: 12 GB de swap evitam o "exit code 137".
+      - name: Aumentar memória virtual (swap)
+        run: |
+          sudo fallocate -l 12G /mnt/swapfile-extra
+          sudo chmod 600 /mnt/swapfile-extra
+          sudo mkswap /mnt/swapfile-extra
+          sudo swapon /mnt/swapfile-extra
+          free -h
 
       - uses: actions/checkout@v4
         with:
@@ -156,8 +165,17 @@ jobs:
           haskell: true
           large-packages: true
           docker-images: true
-          swap-storage: true
+          swap-storage: false
           tool-cache: false
+
+      # Builds IL2CPP (WebGL/Android) usam muita memória: 12 GB de swap evitam o "exit code 137".
+      - name: Aumentar memória virtual (swap)
+        run: |
+          sudo fallocate -l 12G /mnt/swapfile-extra
+          sudo chmod 600 /mnt/swapfile-extra
+          sudo mkswap /mnt/swapfile-extra
+          sudo swapon /mnt/swapfile-extra
+          free -h
 
       - uses: actions/checkout@v4
         with:
